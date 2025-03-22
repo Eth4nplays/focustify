@@ -1,8 +1,8 @@
 name: focustify
-description: "A new Flutter project."
+description: "A simple focus app with to-do list and app shortcuts."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.1
 
 environment:
   sdk: ^3.7.2
@@ -14,6 +14,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   window_manager: ^0.4.3
   shared_preferences: ^2.5.2
+  webview_windows: ^0.2.0
 
 dev_dependencies:
   flutter_test:
