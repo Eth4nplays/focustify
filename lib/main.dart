@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:webview_windows/webview_windows.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Focustify',
       theme: ThemeData(
-        useMaterial3: true, // Enables Material 3 design
+        useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.blue,
           brightness: Brightness.dark,
@@ -106,9 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: TextField(
                       controller: _hoursController,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ], // Ensures only numbers
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: const InputDecoration(
                         labelText: 'Hours',
                         filled: true,
@@ -317,7 +315,9 @@ class _FocusScreenState extends State<FocusScreen> {
                 style: const TextStyle(fontSize: 20),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
+            const Divider(),
+            const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -334,7 +334,11 @@ class _FocusScreenState extends State<FocusScreen> {
                   ),
                   const SizedBox(width: 10),
                   FilledButton(
-                    onPressed: () => _openBrowser('https://www.google.com'),
+                    onPressed:
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => Browser()),
+                        ),
                     child: const Text('Browser'),
                   ),
                 ],
@@ -344,7 +348,7 @@ class _FocusScreenState extends State<FocusScreen> {
             const Divider(),
             const SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.only(left: 40, right: 40),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -373,7 +377,7 @@ class _FocusScreenState extends State<FocusScreen> {
                     ListTile(
                       title: Text(_todos[i]),
                       trailing: IconButton(
-                        icon: const Icon(Icons.delete),
+                        icon: const Icon(Icons.check),
                         onPressed: () {
                           setState(() {
                             _todos.removeAt(i);
@@ -392,7 +396,7 @@ class _FocusScreenState extends State<FocusScreen> {
               onLongPressStart: (_) => _startHolding(),
               onLongPressEnd: (_) => _stopHolding(),
               child: FilledButton(
-                onPressed: () {}, // Disable normal tap exit
+                onPressed: () {},
                 child: const Text('Exit Focus Mode (Hold)'),
               ),
             ),
@@ -402,7 +406,7 @@ class _FocusScreenState extends State<FocusScreen> {
                 children: [
                   const SizedBox(height: 10),
                   SizedBox(
-                    width: 200, // Set the desired width
+                    width: 200,
                     child: LinearProgressIndicator(
                       value: _holdProgress,
                       minHeight: 8,
@@ -414,6 +418,76 @@ class _FocusScreenState extends State<FocusScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class Browser extends StatefulWidget {
+  @override
+  _BrowserState createState() => _BrowserState();
+}
+
+class _BrowserState extends State<Browser> {
+  final WebviewController _controller = WebviewController();
+  final List<String> _history = [];
+  int _currentIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeWebView();
+  }
+
+  Future<void> _initializeWebView() async {
+    try {
+      await _controller.initialize();
+      await _controller.loadUrl('https://google.com/');
+
+      _controller.url.listen((url) {
+        if (_history.isEmpty || _history.last != url) {
+          _history.add(url);
+          _currentIndex = _history.length - 1;
+        }
+        setState(() {});
+      });
+
+      setState(() {});
+    } catch (e) {
+      debugPrint("Error initializing WebView: $e");
+    }
+  }
+
+  void _reloadWebView() {
+    if (_controller.value.isInitialized) {
+      _controller.reload();
+    }
+  }
+
+  void _goBack() {
+    if (_currentIndex > 0) {
+      _currentIndex--;
+      _controller.loadUrl(_history[_currentIndex]);
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Browser'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: _currentIndex > 0 ? _goBack : null,
+          ),
+          IconButton(icon: Icon(Icons.refresh), onPressed: _reloadWebView),
+        ],
+      ),
+      body:
+          _controller.value.isInitialized
+              ? Webview(_controller)
+              : Center(child: CircularProgressIndicator()),
     );
   }
 }
